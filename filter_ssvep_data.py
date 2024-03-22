@@ -5,34 +5,52 @@ plot amplitudes and envelopes against event times, and plot the average power sp
 Authored by Ashley Heath and Lute Lillo
 """
 
-import scipy.signal
+import scipy.signal as signal
 import numpy as np
 import matplotlib.pyplot as plt
 
-def make_bandpass_filter(low_cutoff, high_cutoff, filter_order, fs, filter_type="hann"):
-    #calculate input values
-    nyquist_frequency = fs/2
-    low_cutoff_adjusted = low_cutoff/nyquist_frequency
-    high_cutoff_adjusted = high_cutoff/nyquist_frequency
+def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=1000, fs=10, filter_type="hann"):
 
-    #get filter coefficients
-    filter_coefficients = scipy.signal.firwin(numtaps=filter_order+1, cutoff=[low_cutoff_adjusted, high_cutoff_adjusted], window=filter_type, fs=fs)
-    print(np.shape(filter_coefficients))
-    #calculate impulse response
-    impulse = np.zeros_like(filter_coefficients)
-    print(np.shape(filter_coefficients))
-    impulse[len(filter_coefficients)//2] = 1
+    #calculate input values
+    nyquist_frequency = fs / 2
+    low_cutoff_adjusted = low_cutoff / nyquist_frequency
+    high_cutoff_adjusted = high_cutoff / nyquist_frequency
+    
+    cutoff = high_cutoff_adjusted - low_cutoff_adjusted
+    cutoff_array = [low_cutoff_adjusted, high_cutoff_adjusted]
+    
+    # Get filter coefficients
+    filter_coefficients = signal.firwin(numtaps=filter_order+1, cutoff=cutoff_array,
+                                        window=filter_type, fs=fs)
+    
+    # Calculate impulse response
+    impulse = np.zeros_like(filter_coefficients) # Shape (1001,)
+    impulse[int(len(filter_coefficients)/2)] = 1
+    
+    # Get impulse response
+    h_t = signal.lfilter(filter_coefficients, a=1, x=impulse)
+    
     impulse_filtered = np.fft.fft(impulse) * filter_coefficients
     impulse_response = np.fft.ifft(impulse_filtered).real 
 
-    #calculate frequency response
-    frequency_response = scipy.signal.freqz(filter_coefficients, fs=fs)
 
-    lag_axis = np.arange(-len(filter_coefficients) // 2, len(filter_coefficients) // 2) / fs
-    figure, axis = plt.subplots(2,1)                         # ... and plot the results.
-    axis[0].plot(lag_axis, impulse_response, label="impulse response")
-    plt.show()
-    #axis.xlabel()
+    # Calculate frequency response
+    frequency_response, H_f = signal.freqz(filter_coefficients, a=1, fs=fs)
     
-    #axis.plot(lag_axis, impulse, label="impulse")
+    # plt.plot(frequency_response, np.abs(H_f))
+    # plt.xlabel('f (Hz)')
+    # plt.ylabel('|H(f)|')
+    # plt.title('filter magnitude response')
+    # plt.show()
+    
+
+    lag_axis = np.arange(int(-len(filter_coefficients) // 2), int(len(filter_coefficients) // 2)) / fs # Shape (1001,)
+    
+    figure, axis = plt.subplots(2,1)                         # ... and plot the results.
+    axis[0].plot(lag_axis, h_t, label="impulse response")
+    axis[1].plot(frequency_response, np.abs(H_f), label="frequency response")
+
+    plt.savefig(f"plots/{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
+    
+    return filter_coefficients
 

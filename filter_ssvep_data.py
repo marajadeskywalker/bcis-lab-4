@@ -8,15 +8,15 @@ Authored by Ashley Heath and Lute Lillo
 import scipy.signal as signal
 import numpy as np
 import matplotlib.pyplot as plt
+import bci_filtering_plot as bfp
 
-def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=1000, fs=10, filter_type="hann"):
+def make_bandpass_filter(low_cutoff, high_cutoff, filter_order, fs, filter_type="hann"):
 
     #calculate input values
     nyquist_frequency = fs / 2
     low_cutoff_adjusted = low_cutoff / nyquist_frequency
     high_cutoff_adjusted = high_cutoff / nyquist_frequency
     
-    cutoff = high_cutoff_adjusted - low_cutoff_adjusted
     cutoff_array = [low_cutoff_adjusted, high_cutoff_adjusted]
     
     # Get filter coefficients
@@ -30,25 +30,17 @@ def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=1000, fs=10, filt
     # Get impulse response
     h_t = signal.lfilter(filter_coefficients, a=1, x=impulse)
     
-    impulse_filtered = np.fft.fft(impulse) * filter_coefficients
-    impulse_response = np.fft.ifft(impulse_filtered).real 
-
+    # impulse_filtered = np.fft.fft(impulse) * filter_coefficients
+    # impulse_response = np.fft.ifft(impulse_filtered).real 
 
     # Calculate frequency response
     frequency_response, H_f = signal.freqz(filter_coefficients, a=1, fs=fs)
-    
-    # plt.plot(frequency_response, np.abs(H_f))
-    # plt.xlabel('f (Hz)')
-    # plt.ylabel('|H(f)|')
-    # plt.title('filter magnitude response')
-    # plt.show()
-    
 
     lag_axis = np.arange(int(-len(filter_coefficients) // 2), int(len(filter_coefficients) // 2)) / fs # Shape (1001,)
     
     figure, axis = plt.subplots(2,1)                         # ... and plot the results.
     axis[0].plot(lag_axis, h_t, label="impulse response")
-    axis[1].plot(frequency_response, np.abs(H_f), label="frequency response")
+    axis[1].plot(frequency_response, bfp.convert_to_db(H_f), label="frequency response")
 
     plt.savefig(f"plots/{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
     

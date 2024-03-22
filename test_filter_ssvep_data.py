@@ -14,5 +14,5 @@ data = load(subject, data_directory)
 
 # Part 2
 
-filter_coeff_1 = make_bandpass_filter(11, 13, 1000)
-filter_coeff_2 = make_bandpass_filter(12, 14, 1000)
+filter_coeff_1 = make_bandpass_filter(13, 15, filter_order=1000, fs=1000)
+filter_coeff_2 = make_bandpass_filter(12, 14, filter_order=1000, fs=1000)

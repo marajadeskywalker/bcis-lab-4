@@ -86,20 +86,35 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
             
         Returns:
         ----------
-            - envelope (array | Shape (n_channels, n_time_points)): Amplitude of oscillations
+            - envelope (array | Shape (n_channels, n_time_points)): Amplitude of oscillations.
     
     """
-    if channel_to_plot is None:
-        # Create new plot
-        pass
+    if channel_to_plot is not None:
+        eeg = data['eeg']  
+        fs = data['fs']
+        
+        # Create time variable
+        number_of_samples = np.shape(eeg[0]) # number of samples in one session
+        eeg_end_time = 1/fs * number_of_samples[0] # time point when the session ends in seconds
+        time = np.linspace(start= 0, stop=eeg_end_time, num=number_of_samples[0]) 
+
+        analytical_signal = np.abs(signal.hilbert(filtered_data[int(channel_to_plot)]))
+       
+        figure, axis = plt.subplots(1,1, figsize=(15, 7)) 
+        axis.plot(time, analytical_signal, label="hilbert signal")
+        axis.set_xlim(147, 164)
+        # axis.set_ylim(-10, 10)
+        axis.set_xlabel('time (s)')
+        axis.set_ylabel('voltage (uV)')
+        axis.grid(True)
+       
+        plt.savefig(f'testing_{channel_to_plot}.png')
+        # Create new plot of that channel
+
     
-    
-    
-    if ssvep_frequency is None:
-        plt.savefig(f"plots/unknown_freq.png")
-    # If the ssvep_frequency input is None, your plot’s title should state that the frequency being 
-    # isolated is unknown. The function should return the amplitude of oscillations (on every channel at 
-    # every time point) in an array called envelope.
+    # if ssvep_frequency is None:
+    #     plt.savefig(f"plots/unknown_freq.png")
+
 
     envelope = []
     return envelope

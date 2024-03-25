@@ -44,7 +44,7 @@ def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=10, fs=1000, filt
     axis[1].set_xlim(0, 60)
     axis[1].set_ylabel('amplitude (dB)')
     
-    plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
+    # plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
     
     return filter_coefficients
 
@@ -116,7 +116,65 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
             axis.set_title("Unknown BPF Data")
         axis.grid(True)
        
-        plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
+        # plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
         # Create new plot of that channel
 
     return amplitude_envelope
+
+def plot_ssvep_amplitudes(data, envelope_a, envelope_b, channel_to_plot, ssvep_freq_a, ssvep_freq_b, subject):
+    """
+        Definition:
+        ----------
+        
+        
+        Parameters:
+        ----------
+            - data (dict) the raw data dictionary,
+            - envelope_a (array | Shape (n_channels, n_time_points)): Amplitude of oscillations at the first frequency
+            - envelope_b (array | Shape (n_channels, n_time_points)): Amplitude of oscillations at the second frequency
+            - channel_to_plot (str): which channel to plot.
+            - ssvep_freq_a (int): the SSVEP frequency being isolated in the first envelope.
+            - ssvep_freq_b (int): the SSVEP frequency being isolated in the second envelope.
+            - subject (int): the subject number.
+            
+        Returns:
+        ----------
+            None
+    """
+     #define variables
+    fs = data['fs'] # frequency in samples per second
+    eeg_data = data['eeg'] # data in volts
+    event_samples = data['event_samples'] # when each event occured
+    event_durations = data['event_durations'] # how long each event occured for
+    event_types = data['event_types'] # frequency of flickering
+    
+    # Create time variable
+    number_of_samples = np.shape(eeg_data[0]) # number of samples in one session
+    eeg_end_time = 1/fs * number_of_samples[0] #time point when the session ends in seconds
+    time = np.linspace(start= 0, stop=eeg_end_time, num=number_of_samples[0]) 
+
+    # Create Figure    
+    fig, axs = plt.subplots(2, 1, sharex= True, figsize=(12,6))
+    
+    # Get start and end time.
+    start_time = event_samples / fs
+    end_time = (event_samples + event_durations) / fs
+
+    # Plot event times and Hz. SUBPLOT 1
+    for event_index, event in enumerate(event_samples):
+        axs[0].plot(start_time[event_index], event_types[event_index], 'o', color='blue')
+        axs[0].plot(end_time[event_index], event_types[event_index], 'o', color='blue')
+        axs[0].plot([start_time[event_index], end_time[event_index]], [event_types[event_index], event_types[event_index]], color='blue')
+    
+    axs[0].set_xlabel('time (s)')
+    axs[0].set_ylabel('Flash Frequency')
+    
+    # Plot envelopes
+    axs[1].plot(time, envelope_a, label=ssvep_freq_a, color='blue')
+    axs[1].plot(time, envelope_b, label=ssvep_freq_b, color='green')
+    axs[1].legend()
+    axs[1].set_xlim(0, 16)
+    
+    plt.suptitle(f'SSVEP S{subject} Amplitudes')
+    plt.tight_layout()
+    plt.savefig(f"plots/Subject_{subject}_{ssvep_freq_a}Hz-{ssvep_freq_b}Hz_envelope_comparison_limit.png")

@@ -44,7 +44,7 @@ def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=10, fs=1000, filt
     axis[1].set_xlim(0, 60)
     axis[1].set_ylabel('amplitude (dB)')
     
-    # plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
+    plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
     
     return filter_coefficients
 
@@ -113,17 +113,10 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
         if ssvep_frequency is not None:
             axis.set_title(f"{ssvep_frequency}Hz BPF Data")
         else:
-            axis.set_title("BPF Data")
+            axis.set_title("Unknown BPF Data")
         axis.grid(True)
        
-
-
-        plt.savefig(f'testing_{channel_to_plot}.png')
+        plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
         # Create new plot of that channel
-
-    
-    # if ssvep_frequency is None:
-    #     plt.savefig(f"plots/unknown_freq.png")
-
 
     return amplitude_envelope

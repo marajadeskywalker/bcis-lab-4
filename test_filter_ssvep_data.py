@@ -23,3 +23,4 @@ filtered_data_2 = filter_data(data, filter_coeff_2)
 # Part 4
 envelope_1 = get_envelope(data, filtered_data_1, "3", None)
 envelope_2 = get_envelope(data, filtered_data_2, "5", None)
+

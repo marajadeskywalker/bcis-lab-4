@@ -44,7 +44,7 @@ def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=10, fs=1000, filt
     axis[1].set_xlim(0, 60)
     axis[1].set_ylabel('amplitude (dB)')
     
-    # plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
+    plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
     
     return filter_coefficients
 
@@ -98,23 +98,25 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
         eeg_end_time = 1/fs * number_of_samples[0] # time point when the session ends in seconds
         time = np.linspace(start= 0, stop=eeg_end_time, num=number_of_samples[0]) 
 
-        analytical_signal = np.abs(signal.hilbert(filtered_data[int(channel_to_plot)]))
-       
+        filtered_signal = filtered_data[int(channel_to_plot)]
+        analytical_signal = signal.hilbert(filtered_signal)
+        amplitude_envelope = np.abs(analytical_signal)
+
         figure, axis = plt.subplots(1,1, figsize=(15, 7)) 
-        axis.plot(time, analytical_signal, label="hilbert signal")
+        axis.plot(time, filtered_signal, label="Filtered signal")
+        axis.plot(time, amplitude_envelope, label="Envelope")
         axis.set_xlim(147, 164)
+        
         # axis.set_ylim(-10, 10)
         axis.set_xlabel('time (s)')
         axis.set_ylabel('voltage (uV)')
+        if ssvep_frequency is not None:
+            axis.set_title(f"{ssvep_frequency}Hz BPF Data")
+        else:
+            axis.set_title("Unknown BPF Data")
         axis.grid(True)
        
-        plt.savefig(f'testing_{channel_to_plot}.png')
+        plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
         # Create new plot of that channel
 
-    
-    # if ssvep_frequency is None:
-    #     plt.savefig(f"plots/unknown_freq.png")
-
-
-    envelope = []
-    return envelope
+    return amplitude_envelope

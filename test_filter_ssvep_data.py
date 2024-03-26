@@ -2,10 +2,10 @@ from import_ssvep_data import load_ssvep_data as load
 from import_ssvep_data import plot_raw_data as plot
 from import_ssvep_data import epoch_ssvep_data
 import numpy as np
-from import_ssvep_data import get_frequency_spectrum
+from import_ssvep_data import get_frequency_spectrum, epoch_ssvep_data
 from filter_ssvep_data import make_bandpass_filter, filter_data, get_envelope, plot_ssvep_amplitudes
 
-subject = 1
+subject = 2
 data_directory = "SSVEP_data"
 
 # Part 1
@@ -26,5 +26,5 @@ envelope_2 = get_envelope(data, filtered_data_2, "5", None)
 
 # Part 5
 channel_to_plot = 29 # Oz channel
-plot_ssvep_amplitudes(data, envelope_1, envelope_2, channel_to_plot, 12, 15, 3)
+plot_ssvep_amplitudes(data, envelope_1, envelope_2, channel_to_plot, 12, 15, subject)
 

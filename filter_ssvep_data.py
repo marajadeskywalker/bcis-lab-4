@@ -45,7 +45,7 @@ def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=10, fs=1000, filt
     axis[1].set_xlim(0, 60)
     axis[1].set_ylabel('amplitude (dB)')
     
-    plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
+    # plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
     
     return filter_coefficients
 
@@ -66,7 +66,7 @@ def filter_data(data, b):
             - filtered_data: data dictionary after having applied the filter forwards
             and backwards in time to each channel in the raw data.
     """
-    eeg = data['eeg']       
+    eeg = data['eeg'] 
 
     filter_data = signal.filtfilt(b, a=1, x=eeg)
     
@@ -90,22 +90,27 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
             - envelope (array | Shape (n_channels, n_time_points)): Amplitude of oscillations.
     
     """
+    eeg = data['eeg']  
+    fs = data['fs']
+    channels = data['channels']
+    
+     # Create time variable
+    number_of_samples = np.shape(eeg[0]) # number of samples in one session
+    eeg_end_time = 1/fs * number_of_samples[0] # time point when the session ends in seconds
+    time = np.linspace(start= 0, stop=eeg_end_time, num=number_of_samples[0]) 
+    amplitude_envelope = []
+    int_ch_plot = int(channel_to_plot)
+    
+    for channel_idx, channel in enumerate(channels):
+
+        filtered_signal_channel = filtered_data[channel_idx]
+        analytical_signal = signal.hilbert(filtered_signal_channel)
+        amplitude_envelope.append(np.abs(analytical_signal))
+
     if channel_to_plot is not None:
-        eeg = data['eeg']  
-        fs = data['fs']
-        
-        # Create time variable
-        number_of_samples = np.shape(eeg[0]) # number of samples in one session
-        eeg_end_time = 1/fs * number_of_samples[0] # time point when the session ends in seconds
-        time = np.linspace(start= 0, stop=eeg_end_time, num=number_of_samples[0]) 
-
-        filtered_signal = filtered_data[int(channel_to_plot)]
-        analytical_signal = signal.hilbert(filtered_signal)
-        amplitude_envelope = np.abs(analytical_signal)
-
         figure, axis = plt.subplots(1,1, figsize=(15, 7)) 
-        axis.plot(time, filtered_signal, label="Filtered signal")
-        axis.plot(time, amplitude_envelope, label="Envelope")
+        axis.plot(time, filtered_data[int_ch_plot], label="Filtered signal")
+        axis.plot(time, amplitude_envelope[int_ch_plot], label="Envelope")
         axis.set_xlim(147, 164)
         
         # axis.set_ylim(-10, 10)
@@ -117,8 +122,7 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
             axis.set_title("Unknown BPF Data")
         axis.grid(True)
        
-        plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
-        # Create new plot of that channel
+        # plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
 
     return amplitude_envelope
 
@@ -180,7 +184,7 @@ def plot_ssvep_amplitudes(data, envelope_a, envelope_b, channel_to_plot, ssvep_f
     
     plt.suptitle(f'SSVEP S{subject} Amplitudes - Channel {channel_to_plot}')
     plt.tight_layout()
-    plt.savefig(f"plots/Channel_{channel_to_plot}_Subject_{subject}_{ssvep_freq_a}Hz-{ssvep_freq_b}Hz_envelope_comparison_limit.png")
+    # plt.savefig(f"plots/Channel_{channel_to_plot}_Subject_{subject}_{ssvep_freq_a}Hz-{ssvep_freq_b}Hz_envelope_comparison_limit.png")
     
 # Part 6
 def plot_filtered_spectra(data, filtered_data, envelope, channels_to_plot, subject):
@@ -201,26 +205,45 @@ def plot_filtered_spectra(data, filtered_data, envelope, channels_to_plot, subje
         ----------
             None
     """
+    
     # Use cases from Lab3 
     channels = data['channels']
     fs = data['fs']
 
     # Plots raw data
-    # isd.plot_raw_data(subject, data_dict, channels_to_plot)
     eeg_epochs, epoch_times, is_trial_15Hz = epoch_ssvep_data(data)
-
-    # Get the FFT
+    egg_epochs_fft, fft_frequencies = get_frequency_spectrum(eeg_epochs, fs) # eeg_epochs_fft -> (20, 32, 10001)
+    raw_spectrum_db_12Hz, raw_spectrum_db_15Hz = plot_power_spectrum(egg_epochs_fft, fft_frequencies, is_trial_15Hz, channels, channels_to_plot, subject)
+    
+    # Plots filtered_data # (32, 467580)
+    eeg_epochs, epoch_times, is_trial_15Hz= epoch_filtered_data(data, filtered_data, epoch_start_time=0, epoch_end_time=20)
     egg_epochs_fft, fft_frequencies = get_frequency_spectrum(eeg_epochs, fs)
+    filtered_spectrum_db_12Hz, filtered_spectrum_db_15Hz = plot_power_spectrum(egg_epochs_fft, fft_frequencies, is_trial_15Hz, channels, channels_to_plot, subject)
 
-    # # Plot the power Spectrum
-    plot_power_spectrum(egg_epochs_fft, fft_frequencies, is_trial_15Hz, channels, channels_to_plot, subject)
+    # Plots envelope
+    eeg_epochs, epoch_times, is_trial_15Hz = epoch_ssvep_data(envelope)
+    egg_epochs_fft, fft_frequencies = get_frequency_spectrum(eeg_epochs, fs)
+    envelope_spectrum_db_12Hz, envelope_spectrum_db_15Hz = plot_power_spectrum(egg_epochs_fft, fft_frequencies, is_trial_15Hz, channels, channels_to_plot, subject)
+    
     
     # Create Figure    
     fig, axs = plt.subplots(3, 2, sharex= True, figsize=(12, 6))
+    for channel, channel_index in enumerate(channels_to_plot):
+        print(channel)
+        exit()
+        axs[channel].plot(fft_frequencies, spectrum_db_12Hz[channel], label='12Hz Trials')
+        axs[channel].plot(fft_frequencies, spectrum_db_15Hz[channel], label='15Hz Trials')
+        axs[channel].axvline(x=12, linestyle='--', color='gray')
+        axs[channel].axvline(x=15, linestyle='--', color='gray')
+        #format plot
+        axs[channel].set_title(f'Channel {channels[channel_index]} Power Spectrum (Subject {subject})')
+        axs[channel].set_ylabel('Power (dB)')
+        axs[channel].legend()
+    
     
 # Plotting power spectrum from Lab 3
 #%% Part 5
-def plot_power_spectrum(eeg_epochs_fft, fft_frequencies, is_trial_15Hz, channels, channels_to_plot, subject ):
+def plot_power_spectrum(eeg_epochs_fft, fft_frequencies, is_trial_15Hz, channels, channels_to_plot, subject):
     """
         Calculate the mean power spectra for the specified channels
         and then, plot each in their own subplot.
@@ -255,7 +278,6 @@ def plot_power_spectrum(eeg_epochs_fft, fft_frequencies, is_trial_15Hz, channels
     
     # Create subplots
     fig, axs = plt.subplots(len(channels_to_plot), 1, figsize=(12, 8), sharex=True)
-    
     
     # Iterate over each channel to plot
     for channel, channel_index in enumerate(channels_to_plot):
@@ -292,18 +314,47 @@ def plot_power_spectrum(eeg_epochs_fft, fft_frequencies, is_trial_15Hz, channels
         spectrum_db_15Hz.append(10 * np.log10(mean_power_15Hz_norm))       
 
        # Plot the mean power spectra
-        axs[channel].plot(fft_frequencies, spectrum_db_12Hz[channel], label='12Hz Trials')
-        axs[channel].plot(fft_frequencies, spectrum_db_15Hz[channel], label='15Hz Trials')
-        axs[channel].axvline(x=12, linestyle='--', color='gray')
-        axs[channel].axvline(x=15, linestyle='--', color='gray')
-        #format plot
-        axs[channel].set_title(f'Channel {channels[channel_index]} Power Spectrum (Subject {subject})')
-        axs[channel].set_ylabel('Power (dB)')
-        axs[channel].legend()
+    #     axs[channel].plot(fft_frequencies, spectrum_db_12Hz[channel], label='12Hz Trials')
+    #     axs[channel].plot(fft_frequencies, spectrum_db_15Hz[channel], label='15Hz Trials')
+    #     axs[channel].axvline(x=12, linestyle='--', color='gray')
+    #     axs[channel].axvline(x=15, linestyle='--', color='gray')
+    #     #format plot
+    #     axs[channel].set_title(f'Channel {channels[channel_index]} Power Spectrum (Subject {subject})')
+    #     axs[channel].set_ylabel('Power (dB)')
+    #     axs[channel].legend()
 
-    plt.xlabel('Frequency (Hz)')
-    plt.tight_layout()
-    #save plot
-    plt.savefig(f'plots/power_spectrum/SSVEP_S{subject}_Power Spectrum_Full_diffEpochStartEnd.png')
+    # plt.xlabel('Frequency (Hz)')
+    # plt.tight_layout()
+    # #save plot
+    # plt.savefig(f'plots/power_spectrum/SSVEP_S{subject}_Power Spectrum_Full_diffEpochStartEnd.png')
 
     return spectrum_db_12Hz, spectrum_db_15Hz
+
+def epoch_filtered_data(data, eeg_data, epoch_start_time=0, epoch_end_time=20):
+    fs = data['fs'] # 1000
+    event_samples = data['event_samples'] # (20,)
+    event_durations = data['event_durations'] # (20,) -> how long each event occured for
+    event_types = data['event_types'] # (20,) -> frequency of flickering (12Hz or 15Hz)
+    channels = data['channels'] # names of channels (32,)
+    # Get the samples per epoch time dimension    
+    samples_per_second = fs # Hz
+    seconds_per_epoch = epoch_end_time - epoch_start_time
+    samples_per_epoch = int(samples_per_second * seconds_per_epoch) 
+    
+    # Create empty 3D array of epochs. 
+    eeg_epochs = np.zeros((len(event_samples), len(channels), samples_per_epoch)) # (20, 32, 20000)
+    
+    # Loop through samples to extract epochs    
+    for event_index, event in enumerate(event_samples):
+        before_flash = epoch_start_time * samples_per_epoch
+        start_sample = int(event + before_flash) # When the event starts
+        end_sample = int((event + event_durations[event_index]))
+        eeg_epochs[event_index] = eeg_data[:, start_sample:end_sample]
+
+    # Get the epoch times 1D of times relative to events
+    epoch_times = np.arange(epoch_start_time, epoch_end_time, 1/samples_per_second ) # Shape (20000,)
+
+    # Change 15Hz for True values
+    is_trial_15Hz = [False if x == "12hz" else True for x in event_types]    
+    
+    return eeg_epochs, epoch_times, is_trial_15Hz

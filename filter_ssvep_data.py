@@ -1,8 +1,14 @@
 """
-filter_ssvep_data.py
-Defines functions to construct a filter according to the input specifications, calculate the envelope from the filtered and unfiltered data,
-plot amplitudes and envelopes against event times, and plot the average power spectra across epochs for the data.
-Authored by Ashley Heath and Lute Lillo
+    Definition:
+    ----------
+    Defines functions to construct a filter according to the input specifications,
+    calculate the envelope from the filtered and unfiltered data,
+    plot amplitudes and envelopes against event times,
+    and plot the average power spectra across epochs for the data.
+    
+    Authors
+    -----------
+    Ashley Heath and Lute Lillo
 """
 
 import scipy.signal as signal
@@ -11,7 +17,25 @@ import matplotlib.pyplot as plt
 import bci_filtering_plot as bfp
 from import_ssvep_data import get_frequency_spectrum, epoch_ssvep_data, epoch_filtered_data, plot_power_spectrum
 
-def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=10, fs=1000, filter_type="hann"):
+def make_bandpass_filter(low_cutoff, high_cutoff, filter_type="hann", filter_order=10, fs=1000):
+    """
+        Definition:
+        ----------
+            Create a Filter and plot the impulse response and frequency response of your filter
+        
+        Parameters:
+        ----------
+            - low_cutoff (int): the lower cutoff frequency (in Hz).
+            - high_cutoff (int): the higher cutoff frequency (in Hz)
+            - filter_type (str): the filter type
+            - filter_order (int): the filter order
+            - fs (int): the sampling frequency in Hz
+            
+        Returns:
+        ----------
+            - filtered_data: data dictionary after having applied the filter forwards
+            and backwards in time to each channel in the raw data.
+    """
     
     low_cutoff_adjusted = low_cutoff
     high_cutoff_adjusted = high_cutoff
@@ -45,7 +69,7 @@ def make_bandpass_filter(low_cutoff, high_cutoff, filter_order=10, fs=1000, filt
     axis[1].set_xlim(0, 60)
     axis[1].set_ylabel('amplitude (dB)')
     
-    # plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
+    plt.savefig(f"plots/Limit_{filter_type}_filter_{low_cutoff}-{high_cutoff}Hz_order{filter_order}.png")
     
     return filter_coefficients
 
@@ -76,8 +100,10 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
     """
         Definition:
         ----------
+            Extract the envelope surrounding the waves of the amplitude of oscillations 
+            usign the Hilbert Transform. This envelope tends to surf along the top of the
+            wave, connecting all the peaks. It reflects the wave's amplitude
             
-        
         Parameters:
         ----------
             - data (dict): the raw data dictionary.
@@ -101,12 +127,14 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
     amplitude_envelope = []
     int_ch_plot = int(channel_to_plot)
     
+    # Get the envelope for all channels
     for channel_idx, channel in enumerate(channels):
 
         filtered_signal_channel = filtered_data[channel_idx]
         analytical_signal = signal.hilbert(filtered_signal_channel)
         amplitude_envelope.append(np.abs(analytical_signal))
 
+    # Plot for the specific channel
     if channel_to_plot is not None:
         figure, axis = plt.subplots(1,1, figsize=(15, 7)) 
         axis.plot(time, filtered_data[int_ch_plot], label="Filtered signal")
@@ -122,7 +150,7 @@ def get_envelope(data, filtered_data, channel_to_plot=None, ssvep_frequency=None
             axis.set_title("Unknown BPF Data")
         axis.grid(True)
        
-        # plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
+        plt.savefig(f'plots/Channel_{channel_to_plot}-{ssvep_frequency}Hz.png')
 
     return amplitude_envelope
 
@@ -130,7 +158,8 @@ def plot_ssvep_amplitudes(data, envelope_a, envelope_b, channel_to_plot, ssvep_f
     """
         Definition:
         ----------
-        
+            Plot the 12Hz and 15Hz envelopes alongside the task events to get a better sense of whether they are 
+            responding to task events.
         
         Parameters:
         ----------
@@ -185,14 +214,14 @@ def plot_ssvep_amplitudes(data, envelope_a, envelope_b, channel_to_plot, ssvep_f
     
     plt.suptitle(f'SSVEP S{subject} Amplitudes - Channel {channel_to_plot}')
     plt.tight_layout()
-    # plt.savefig(f"plots/Channel_{channel_to_plot}_Subject_{subject}_{ssvep_freq_a}Hz-{ssvep_freq_b}Hz_envelope_comparison_limit.png")
+    plt.savefig(f"plots/Channel_{channel_to_plot}_Subject_{subject}_{ssvep_freq_a}Hz-{ssvep_freq_b}Hz_envelope_comparison_limit.png")
     
 # Part 6
 def plot_filtered_spectra(data, filtered_data, envelope, channels_to_plot, subject):
     """
         Definition:
         ----------
-        
+            Plot the average power spectra across epochs on electrodes Fz and Oz at 3 stages of our analysis: Raw, Filtered and Envelope.
         
         Parameters:
         ----------
@@ -243,8 +272,6 @@ def plot_filtered_spectra(data, filtered_data, envelope, channels_to_plot, subje
     
     spectrum_db_12Hz_t = np.array(spectrum_db_12Hz)
     fft_frequencies_t = np.array(fft_frequencies)
-    print(spectrum_db_12Hz_t.shape)
-    print(fft_frequencies_t.shape)
     
     # Create subplots
     ch_str = ['FZ', 'OZ']
@@ -259,8 +286,8 @@ def plot_filtered_spectra(data, filtered_data, envelope, channels_to_plot, subje
             axs[channel_idx, i].set_ylabel('Power (dB)')
             axs[channel_idx, i].axvline(x=12, linestyle='--', color='gray')
             axs[channel_idx, i].axvline(x=15, linestyle='--', color='gray')
+            axs[channel_idx, i].legend()
   
     plt.tight_layout()
-    plt.legend()
     # #save plot
     plt.savefig(f'plots/power_spectrum/S_{subject}_power_spectra_filtered.png')

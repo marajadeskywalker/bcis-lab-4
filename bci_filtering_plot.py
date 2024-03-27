@@ -106,5 +106,5 @@ def plot_filtering(x_t,X_f,h_t,H_f,y_t,Y_f,t,f,f_filter,title='',is_plot_db = Fa
     
     plt.suptitle(title)
     plt.tight_layout()
-    # plt.savefig("test.png")
+    plt.savefig("test.png")
 

@@ -33,7 +33,7 @@ envelope_1 = get_envelope(data, filtered_data_1, "3", None)
 envelope_2 = get_envelope(data, filtered_data_2, "5", None)
 
 # Part 5
-channel_to_plot = 14 # Oz channel 29
+channel_to_plot = 29 # Oz channel 29
 plot_ssvep_amplitudes(data, envelope_1, envelope_2, channel_to_plot, 12, 15, subject)
 
 # Part 6
